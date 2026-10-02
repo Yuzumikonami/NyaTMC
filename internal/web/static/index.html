@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="referrer" content="no-referrer" />
+<title>NyaTMC 仪表盘</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Ctext%20y='25'%20font-size='24'%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">🐱</span>
+    <span class="title">NyaTMC</span>
+    <span class="ver" id="app-version">—</span>
+  </div>
+  <div class="topbar-right">
+    <label class="field-inline">
+      <span>实例</span>
+      <select id="instance-select" aria-label="选择实例"></select>
+    </label>
+    <span id="state-badge" class="badge badge-unknown">未知</span>
+    <button id="btn-tunnel" class="btn btn-ghost" type="button">穿透</button>
+    <button id="btn-reload" class="btn btn-ghost" type="button">刷新</button>
+  </div>
+</header>
+
+<div id="toast-area" class="toast-area" aria-live="polite"></div>
+
+<main class="layout">
+
+  <section class="card span-2" id="card-overview">
+    <header class="card-head">
+      <h2>总览</h2>
+      <span class="muted" id="overview-updated">—</span>
+    </header>
+    <div class="stats" id="stats-grid"></div>
+  </section>
+
+  <section class="card" id="card-control">
+    <header class="card-head">
+      <h2>控制</h2>
+      <span class="muted" id="control-hint"></span>
+    </header>
+    <div class="btn-row">
+      <button id="btn-start" class="btn btn-ok" type="button">启动</button>
+      <button id="btn-stop" class="btn btn-warn" type="button">停止</button>
+      <button id="btn-restart" class="btn btn-info" type="button">重启</button>
+      <button id="btn-kill" class="btn btn-danger" type="button">强制结束</button>
+    </div>
+    <div class="cmd-row">
+      <input id="cmd-input" type="text" placeholder="输入控制台指令，回车发送（例如 say 大家好）" autocomplete="off" />
+      <button id="btn-cmd" class="btn" type="button">发送</button>
+    </div>
+    <pre id="cmd-echo" class="echo">就绪。</pre>
+  </section>
+
+  <section class="card" id="card-charts">
+    <header class="card-head">
+      <h2>性能</h2>
+      <span class="muted">最近 60 个采样点</span>
+    </header>
+    <div class="chart-block">
+      <div class="chart-label"><span>TPS</span><span class="mono" id="chart-tps-now">—</span></div>
+      <canvas id="chart-tps" class="chart" data-h="120"></canvas>
+    </div>
+    <div class="chart-block">
+      <div class="chart-label"><span>内存占用（MB）</span><span class="mono" id="chart-mem-now">—</span></div>
+      <canvas id="chart-mem" class="chart" data-h="120"></canvas>
+    </div>
+  </section>
+
+  <section class="card" id="card-players">
+    <header class="card-head">
+      <h2>在线玩家</h2>
+      <span class="muted" id="players-count">0</span>
+    </header>
+    <div id="players-list" class="players"></div>
+  </section>
+
+  <section class="card span-2" id="card-logs">
+    <header class="card-head wrap">
+      <h2>实时日志</h2>
+      <div class="card-tools">
+        <input id="log-filter" type="search" placeholder="关键词过滤" aria-label="日志关键词过滤" />
+        <label class="field-inline"><span>上限</span>
+          <input id="log-limit" type="number" min="50" max="2000" step="50" value="500" />
+        </label>
+        <button id="btn-log-pause" class="btn btn-ghost" type="button">暂停</button>
+        <button id="btn-log-clear" class="btn btn-ghost" type="button">清空</button>
+        <span id="sse-state" class="badge badge-idle">未连接</span>
+      </div>
+    </header>
+    <div class="log-wrap">
+      <div id="log-view" class="log-view" tabindex="0"></div>
+      <button id="btn-log-bottom" class="btn btn-ghost log-bottom" type="button" hidden>↓ 回到底部</button>
+    </div>
+  </section>
+
+  <section class="card span-2" id="card-backups">
+    <header class="card-head wrap">
+      <h2>备份管理</h2>
+      <div class="card-tools">
+        <input id="backup-label" type="text" placeholder="备份标签（可选）" aria-label="备份标签" />
+        <button id="btn-backup-create" class="btn btn-ok" type="button">立即备份</button>
+        <button id="btn-backup-prune" class="btn btn-warn" type="button">清理旧备份</button>
+      </div>
+    </header>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>文件名</th><th>标签</th><th>大小</th><th>时间</th><th>操作</th></tr>
+        </thead>
+        <tbody id="backup-body">
+          <tr><td colspan="5" class="muted">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" id="backup-meta"></p>
+  </section>
+
+  <section class="card span-2" id="card-config">
+    <header class="card-head wrap">
+      <h2>配置编辑</h2>
+      <div class="card-tools">
+        <span class="muted mono" id="config-path">—</span>
+        <button id="btn-config-reload" class="btn btn-ghost" type="button">重新载入</button>
+        <button id="btn-config-save" class="btn btn-ok" type="button">保存配置</button>
+      </div>
+    </header>
+    <div id="config-error" class="alert alert-error" hidden></div>
+    <div class="config-grid">
+      <textarea id="config-text" spellcheck="false" wrap="off" aria-label="config.toml 原文"></textarea>
+      <div class="config-view">
+        <h3>结构化视图（只读）</h3>
+        <div id="config-structured" class="kv"></div>
+        <div id="config-warnings" class="warnings"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card span-2" id="card-scheduler">
+    <header class="card-head wrap">
+      <h2>调度任务</h2>
+      <span class="muted" id="scheduler-meta">—</span>
+    </header>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>名称</th><th>cron 表达式</th><th>动作</th><th>实例</th><th>下次执行</th><th>状态</th><th>操作</th></tr>
+        </thead>
+        <tbody id="scheduler-body">
+          <tr><td colspan="7" class="muted">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <form id="scheduler-form" class="form-row" autocomplete="off">
+      <input name="name" placeholder="任务名" required aria-label="任务名" />
+      <input name="schedule" placeholder="cron，例如 0 4 * * *" required aria-label="cron 表达式" />
+      <select name="action" aria-label="动作">
+        <option value="backup">backup（备份）</option>
+        <option value="restart">restart（重启）</option>
+        <option value="stop">stop（停止）</option>
+        <option value="start">start（启动）</option>
+        <option value="command">command（发指令）</option>
+      </select>
+      <select name="instance" id="scheduler-instance" aria-label="目标实例"></select>
+      <input name="command" placeholder="指令（动作为 command 时必填）" aria-label="控制台指令" />
+      <button class="btn btn-ok" type="submit">新增任务</button>
+    </form>
+  </section>
+
+  <footer class="foot span-2">
+    <span class="muted">NyaTMC Web 仪表盘 · 纯本地渲染，无任何外部资源 · 令牌保存在浏览器本地（localStorage）</span>
+  </footer>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
