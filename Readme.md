@@ -4,7 +4,7 @@
 
 ![平台](https://img.shields.io/badge/平台-Termux%20%7C%20Linux%20%7C%20Windows-4c8bf5)
 ![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)
-![许可证](https://img.shields.io/badge/许可证-GPL--3.0--or--later-blue)
+![许可证](https://img.shields.io/badge/许可证-GPL--3.0-blue)
 ![状态](https://img.shields.io/badge/状态-活跃开发中-orange)
 
 > **关于这份文档**：内容取自当前源码（`go.mod` 声明 Go 1.27）。
