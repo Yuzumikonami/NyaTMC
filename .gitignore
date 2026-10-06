@@ -21,8 +21,8 @@ go.work.sum
 coverage.txt
 
 # IDE / editor
-.idea/*
-.vscode/*
+.idea/
+.vscode/
 *.swp
 *.swo
 *~
