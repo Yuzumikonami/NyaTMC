@@ -1,5 +1,8 @@
 package cmd
 
+// root.go
+// cobra初始化 | Init cobra
+
 import (
 	"fmt"
 	"os"
@@ -18,6 +21,7 @@ var rootCmd = &cobra.Command{
 func Execute() error {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(os.Stderr, "运行出错喵！/Crashed：", err)
+		os.Exit(1)
 	}
 	return nil
 }

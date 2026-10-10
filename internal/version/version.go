@@ -5,5 +5,5 @@ package version
 var (
 	Version    = "dev"
 	Date       = "unknown"
-	Autoupdate = "nil"
+	Autoupdate = "false"
 )
